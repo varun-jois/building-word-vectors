@@ -9,12 +9,12 @@ import numpy as np
 
 
 class WordVector:
-    def __init__(self, text, vocabulary_size=None, vector_dimensions=10, window_size=5, iterations=100000):
-        self.text = text
-        self.vocabulary_size = vocabulary_size
-        self.vector_dimensions = vector_dimensions
-        self.window_size = window_size
-        self.iterations = iterations
+    def __init__(self):
+        self.text = None
+        self.vocabulary_size = None
+        self.vector_dimensions = None
+        self.window_size = None
+        self.iterations = None
         self.word_vector = None
         self.word_to_index = None
         self.index_to_word = None
@@ -57,7 +57,12 @@ class WordVector:
         model.compile(loss='binary_crossentropy', optimizer='adam')
         return model
 
-    def train(self):
+    def train(self, text, vocabulary_size=None, vector_dimensions=10, window_size=5, iterations=100000):
+        self.text = text
+        self.vocabulary_size = vocabulary_size
+        self.vector_dimensions = vector_dimensions
+        self.window_size = window_size
+        self.iterations = iterations
         tokens_indices = self._tokenize()
         word_pairs, labels = self._get_word_pairs(tokens_indices=tokens_indices)
         model = self._build_model()
@@ -73,15 +78,37 @@ class WordVector:
                 print('iteration, loss = %d, %f' % (i, loss))
         self.word_vector = model.get_layer(index=2).get_weights()[0]
 
+    def build_from_existing(self, fpath):
+        word_to_index = {}
+        index_to_word = {}
+        vectors = []
+        with open(fpath, 'r') as f:
+            for i, line in enumerate(f):
+                contents = line.split()
+                word_to_index[contents[0]] = i + 1
+                index_to_word[str(i + 1)] = contents[0]
+                vectors.append([float(e) for e in contents[1:]])
+        vectors.insert(0, [0] * len(vectors[0]))
+        self.word_to_index = word_to_index
+        self.index_to_word = index_to_word
+        self.word_vector = np.array(vectors)
+
     @staticmethod
     def _cosine_similarity(a, b):
         return a.dot(b.T) / np.linalg.norm(a) / np.linalg.norm(b)
 
-    def get_similar_words(self, word, n=5, reverse=True):
+    def get_cosine_similarity(self, word1, word2):
+        word1_index = self.word_to_index[word1]
+        word2_index = self.word_to_index[word2]
+        word1_vector = self.word_vector[word1_index]
+        word2_vector = self.word_vector[word2_index]
+        return self._cosine_similarity(word1_vector, word2_vector)
+
+    def get_similar_words(self, word, n=5, reverse=False):
         target_word_index = self.word_to_index[word]
         similarity_scores = [(i, self._cosine_similarity(self.word_vector[target_word_index], self.word_vector[i]))
                              for i in range(1, self.word_vector.shape[0]) if target_word_index != i]
-        similarity_scores.sort(key=lambda x: x[1], reverse=reverse)
+        similarity_scores.sort(key=lambda x: x[1], reverse=not reverse)
         similar_words = [self.index_to_word[str(i[0])] for i in similarity_scores[:n]]
         return similar_words
 
@@ -91,7 +118,15 @@ class WordVector:
         word3_index = self.word_to_index[word3]
         target_vector = self.word_vector[word1_index] - self.word_vector[word2_index] + self.word_vector[word3_index]
         similarity_scores = [(i, self._cosine_similarity(target_vector, self.word_vector[i]))
-                             for i in range(1, self.word_vector.shape[0])]
+                             for i in range(1, self.word_vector.shape[0])
+                             if i not in (word1_index, word2_index, word1_index)]
         similarity_scores.sort(key=lambda x: x[1], reverse=True)
         similar_words = [self.index_to_word[str(i[0])] for i in similarity_scores[:n]]
         return similar_words
+
+    def save_vector_to_txt(self, fpath):
+        with open(fpath, 'w') as f:
+            for i in range(1, len(self.index_to_word) + 1):
+                word = self.index_to_word[str(i)]
+                vector = [str(v) for v in self.word_vector[i]]
+                f.write(' '.join([word] + vector) + '\n')
