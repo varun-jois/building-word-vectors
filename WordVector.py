@@ -2,8 +2,9 @@
 from keras.preprocessing.text import Tokenizer
 from keras.models import Model
 from keras.layers.embeddings import Embedding
-from keras.layers import Dense, Input, Reshape, merge, dot
+from keras.layers import Dense, Input, Reshape, dot
 from keras.preprocessing.sequence import make_sampling_table, skipgrams
+from json import loads
 import numpy as np
 
 
@@ -14,7 +15,9 @@ class WordVector:
         self.vector_dimensions = vector_dimensions
         self.window_size = window_size
         self.iterations = iterations
-        self.model = None
+        self.word_vector = None
+        self.word_to_index = None
+        self.index_to_word = None
 
     def _tokenize(self):
         tokenizer = Tokenizer()
@@ -27,6 +30,8 @@ class WordVector:
             else:
                 self.vocabulary_size = 10000
                 tokens_indices = [0 if i > 10000 else i for i in tokens_indices]
+        self.word_to_index = loads(tokenizer.get_config()['word_index'])
+        self.index_to_word = loads(tokenizer.get_config()['index_word'])
         return tokens_indices
 
     def _get_word_pairs(self, tokens_indices):
@@ -55,7 +60,7 @@ class WordVector:
     def train(self):
         tokens_indices = self._tokenize()
         word_pairs, labels = self._get_word_pairs(tokens_indices=tokens_indices)
-        self.model = self._build_model()
+        model = self._build_model()
         target = np.zeros((1,))
         context = np.zeros((1,))
         label = np.zeros((1,))
@@ -63,8 +68,30 @@ class WordVector:
             index = np.random.randint(0, len(labels) - 1)
             target[0, ], context[0, ] = word_pairs[index]
             label[0, ] = labels[index]
-            loss = self.model.train_on_batch([target, context], label)
+            loss = model.train_on_batch([target, context], label)
             if i % 5000 == 0:
-                print('iteration, loss = %d, %d' % (i, loss))
+                print('iteration, loss = %d, %f' % (i, loss))
+        self.word_vector = model.get_layer(index=2).get_weights()[0]
 
+    @staticmethod
+    def _cosine_similarity(a, b):
+        return a.dot(b.T) / np.linalg.norm(a) / np.linalg.norm(b)
 
+    def get_similar_words(self, word, n=5, reverse=True):
+        target_word_index = self.word_to_index[word]
+        similarity_scores = [(i, self._cosine_similarity(self.word_vector[target_word_index], self.word_vector[i]))
+                             for i in range(1, self.word_vector.shape[0]) if target_word_index != i]
+        similarity_scores.sort(key=lambda x: x[1], reverse=reverse)
+        similar_words = [self.index_to_word[str(i[0])] for i in similarity_scores[:n]]
+        return similar_words
+
+    def find_best_relationship(self, word1, word2, word3, n=5):
+        word1_index = self.word_to_index[word1]
+        word2_index = self.word_to_index[word2]
+        word3_index = self.word_to_index[word3]
+        target_vector = self.word_vector[word1_index] - self.word_vector[word2_index] + self.word_vector[word3_index]
+        similarity_scores = [(i, self._cosine_similarity(target_vector, self.word_vector[i]))
+                             for i in range(1, self.word_vector.shape[0])]
+        similarity_scores.sort(key=lambda x: x[1], reverse=True)
+        similar_words = [self.index_to_word[str(i[0])] for i in similarity_scores[:n]]
+        return similar_words
