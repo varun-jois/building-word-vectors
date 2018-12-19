@@ -13,7 +13,7 @@ def load_model():
     :return: The word vectors.
     """
     wv = WordVector()
-    wv.build_from_existing('glove.6B.50d.txt')
+    wv.build_from_existing('glove_modified.txt')
     return wv
 
 
@@ -46,7 +46,8 @@ def play_round(score, word_vector, word1, word2, word3, word4):
     print('The vector guessed: ' + comp_input)
     if user_input == word4 and comp_input == word4:
         print('You both got it right! +1 for both!')
-        score = [i + 1 for i in score]
+        score[0] += 1
+        score[1] += 1
     elif user_input == word4 and comp_input != word4:
         print('You beat the vector! +1 for you.')
         score[0] += 1
