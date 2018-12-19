@@ -53,7 +53,7 @@ class WordVector:
         # dot_product = merge.dot([target_vector, context_vector], axes=1)
         dot_product = Reshape((1,))(dot_product)
         output = Dense(1, activation='sigmoid')(dot_product)
-        model = Model(input=[target, context], output=output)
+        model = Model(inputs=[target, context], outputs=output)
         model.compile(loss='binary_crossentropy', optimizer='adam')
         return model
 
@@ -75,7 +75,7 @@ class WordVector:
             label[0, ] = labels[index]
             loss = model.train_on_batch([target, context], label)
             if i % 5000 == 0:
-                print('iteration, loss = %d, %f' % (i, loss))
+                print('iteration: %d' % i)
         self.word_vector = model.get_layer(index=2).get_weights()[0]
 
     def build_from_existing(self, fpath):
