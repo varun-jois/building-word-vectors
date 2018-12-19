@@ -11,7 +11,8 @@ ITERATIONS = 50000
 
 if __name__ == '__main__':
     print('\n\nThis program builds word vectors from a given .txt file and saves it to disk.')
-    fpath = input('Please provide the full path of the .txt file: ')
+    fpath = input('Please provide the full path of the .txt file. '
+                  '(ex. /home/varun/nltk_data/corpora/gutenberg/austen-emma.txt): ')
     user_input = input('Would you like to proceed with the default settings? (y/n): ')
     if user_input == 'n':
         VECTOR_DIMENSIONS = int(input('What size vector would you like? (int > 0): '))
@@ -22,5 +23,6 @@ if __name__ == '__main__':
     wv = WordVector()
     print('Starting the training.......')
     wv.train(text=text, vector_dimensions=VECTOR_DIMENSIONS, window_size=WINDOW_SIZE, iterations=ITERATIONS)
-    fpath = input('Please provide the full path of the .txt file where you would like to save the weights: ')
+    fpath = input('Please provide the full path of the .txt file where you would like to save the weights. '
+                  '(ex. /home/varun/Desktop/word_vector.txt): ')
     wv.save_vector_to_txt(fpath)
