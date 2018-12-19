@@ -1,4 +1,8 @@
 
+"""This is the client code for generating word vectors on a text. Make sure you have tensorflow,
+   keras and numpy installed.
+
+"""
 from WordVector import WordVector
 
 VECTOR_DIMENSIONS = 10
