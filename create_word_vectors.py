@@ -6,8 +6,8 @@
 from WordVector import WordVector
 
 VECTOR_DIMENSIONS = 10
-WINDOW_SIZE = 5
-ITERATIONS = 100000
+WINDOW_SIZE = 3
+ITERATIONS = 50000
 
 if __name__ == '__main__':
     print('\n\nThis program builds word vectors from a given .txt file and saves it to disk.')

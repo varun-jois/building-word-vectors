@@ -187,7 +187,7 @@ class WordVector:
         :param str fpath: The file path of where the weights must go.
         """
         with open(fpath, 'w') as f:
-            for i in range(1, len(self.index_to_word) + 1):
+            for i in range(1, self.vocabulary_size + 1):
                 word = self.index_to_word[str(i)]
                 vector = [str(v) for v in self.word_vector[i]]
                 f.write(' '.join([word] + vector) + '\n')
